@@ -206,7 +206,7 @@ def random_instance(Nmax, Dmax):
 if __name__ == '__main__':
     Nmax = 25
     Dmax = 100
-    num_iterations = 10
+    num_iterations = 1000000
 
     num_counterexamples = 0
     for iter_index in range(1, num_iterations + 1):
