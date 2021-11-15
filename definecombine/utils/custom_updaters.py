@@ -39,3 +39,13 @@ def aux_graph(partition):
         H.add_edge(aux_edge[0], aux_edge[1], weight=edge_weight)
     
     return H
+
+
+def definer_utility(partition):
+    H = partition.aux_graph
+    mwpm = nx.max_weight_matching(H, maxcardinality=True)
+    mwpm_val = 0
+    for u,v in mwpm:
+        mwpm_val += H[u][v]['weight']
+    
+    return (len(H.nodes) // 2) - mwpm_val
