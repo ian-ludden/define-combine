@@ -2,6 +2,7 @@ from functools import partial
 import time
 import networkx as nx
 import numpy as np
+import random
 from random import randint
 
 from gerrychain import accept, constraints
@@ -11,6 +12,8 @@ from gerrychain.proposals import recom
 from gerrychain.updaters import cut_edges, Tally
 
 from utils.custom_updaters import aux_graph, definer_utility
+
+random.seed(2019)
 
 num_parts = 10 # also referred to as N
 num_cols = num_parts * 8
