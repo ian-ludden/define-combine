@@ -1,7 +1,9 @@
 from math import floor, ceil
+import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import random
+import sys
 
 # Conjectured thresholds for U_A >= q
 def threshold_i_integral(N, D, q):
@@ -203,45 +205,115 @@ def random_instance(Nmax, Dmax):
     return (pA, N, D)
 
 
-if __name__ == '__main__':
-    Nmax = 25
-    Dmax = 100
-    num_iterations = 1000000
 
-    num_counterexamples = 0
-    for iter_index in range(1, num_iterations + 1):
-        if iter_index % 1000 == 0:
-            print("Iteration %d." % iter_index)
 
-        pA, N, D = random_instance(Nmax, Dmax)
-        
-        uA = solve_ndcp(pA, N, D)
+def plot_utility_curve(N, D, output_filename=None):
+    plt.figure()
 
-        # print(sum(max_pack(pA, N, D)), max_pack(pA, N, D))
-        # print(sum(max_crack(pA, N, D)), max_crack(pA, N, D))
-        # print(sum(max_pack_minus_one(pA, N, D)), max_pack_minus_one(pA, N, D))
+    y = np.linspace(0, N, 2*N+1)
+    x = np.zeros(y.shape)
 
-        q = ceil(uA)
-        is_integral_uA = abs(uA - int(uA) < 0.1)
+    for i in range(1, len(x)):
+        def_util = y[i]
+        q = ceil(def_util)
 
-        threshold_fns = []
-        if is_integral_uA:
-            threshold_fns = [threshold_i_integral, threshold_ii_integral, threshold_iii_integral]
+        if def_util == int(def_util):
+            min_threshold = min(threshold_i_integral(N, D, q), 
+                         threshold_ii_integral(N, D, q),
+                         threshold_iii_integral(N, D, q))
         else:
-            threshold_fns = [threshold_I_half_integral, threshold_II_half_integral, threshold_III_half_integral]
+            min_threshold = min(threshold_I_half_integral(N, D, q),
+                                threshold_II_half_integral(N, D, q), 
+                                threshold_III_half_integral(N, D, q))
         
-        thresholds = [fn(N, D, q) for fn in threshold_fns]
-        is_counterexample = True
-        for index, fn in enumerate(threshold_fns):
-            if pA >= thresholds[index]:
-                is_counterexample = False
-                break
-        if is_counterexample:
-            print('***COUNTEREXAMPLE***')
-            print("Iteration %d" % iter_index)
-            print(pA, N, D)
-            print("Definer: %.1f" % uA)
-            print("Combiner: %.1f" % (N-uA))
-            print()
-            num_counterexamples += 1
-    print('Finished %d iterations. Found %d counterexamples.' % (num_iterations, num_counterexamples))
+        x[i] = min_threshold
+
+    # Double all intermediate values to achieve step function, and add top right point
+    y = np.repeat(y, 2)[1:]
+    y = np.append(y, [N])
+    x = np.repeat(x, 2)[:-1]
+    x = np.append(x, [2 * N * D])
+
+    plt.plot(x, y)
+    plt.xlabel("Definer Support ($P^D$)")
+    plt.ylabel("Definer Utility ($U_D$)")
+    plt.title(f"Definer Utility Curve for $N$ = {N}, $D$ = {D}")
+    plt.xticks(np.linspace(0, 2 * N * D, N + 1))
+    if N > 10:
+        plt.xticks(np.linspace(0, 2 * N * D, 13))
+    
+    # Plot conjectured asymptotic utility curve
+    x2 = [0, 2 / 3. * N * D, N * D, 2 * N * D]
+    y2 = [0, N / 3., N, N]
+    plt.plot(x2, y2, '--')
+
+    plt.legend(['Exact', 'Conjectured Asymptotic'])
+
+    if output_filename:
+        plt.savefig(output_filename, dpi=200)
+    
+    plt.show()
+    return
+
+
+if __name__ == '__main__':
+    SEARCH_FOR_COUNTEREXAMPLES = False
+    PLOT_UTILITY = True
+
+    if PLOT_UTILITY:
+        if len(sys.argv) < 3:
+            raise Exception("Missing argument(s). Usage: python ndcp.py [N] [D] [(optional) output filename].")
+        
+        N = int(sys.argv[1])
+        D = int(sys.argv[2])
+
+        output_filename = None
+
+        if len(sys.argv) >= 4:
+            output_filename = sys.argv[3]
+        
+        plot_utility_curve(N, D, output_filename)
+
+
+    if SEARCH_FOR_COUNTEREXAMPLES:
+        Nmax = 25
+        Dmax = 100
+        num_iterations = 1000000
+
+        num_counterexamples = 0
+        for iter_index in range(1, num_iterations + 1):
+            if iter_index % 1000 == 0:
+                print("Iteration %d." % iter_index)
+
+            pA, N, D = random_instance(Nmax, Dmax)
+            
+            uA = solve_ndcp(pA, N, D)
+
+            # print(sum(max_pack(pA, N, D)), max_pack(pA, N, D))
+            # print(sum(max_crack(pA, N, D)), max_crack(pA, N, D))
+            # print(sum(max_pack_minus_one(pA, N, D)), max_pack_minus_one(pA, N, D))
+
+            q = ceil(uA)
+            is_integral_uA = abs(uA - int(uA) < 0.1)
+
+            threshold_fns = []
+            if is_integral_uA:
+                threshold_fns = [threshold_i_integral, threshold_ii_integral, threshold_iii_integral]
+            else:
+                threshold_fns = [threshold_I_half_integral, threshold_II_half_integral, threshold_III_half_integral]
+            
+            thresholds = [fn(N, D, q) for fn in threshold_fns]
+            is_counterexample = True
+            for index, fn in enumerate(threshold_fns):
+                if pA >= thresholds[index]:
+                    is_counterexample = False
+                    break
+            if is_counterexample:
+                print('***COUNTEREXAMPLE***')
+                print("Iteration %d" % iter_index)
+                print(pA, N, D)
+                print("Definer: %.1f" % uA)
+                print("Combiner: %.1f" % (N-uA))
+                print()
+                num_counterexamples += 1
+        print('Finished %d iterations. Found %d counterexamples.' % (num_iterations, num_counterexamples))
