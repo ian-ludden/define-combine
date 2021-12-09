@@ -258,7 +258,30 @@ def plot_utility_curve(N, D, output_filename=None):
 
 if __name__ == '__main__':
     SEARCH_FOR_COUNTEREXAMPLES = False
-    PLOT_UTILITY = True
+    PLOT_UTILITY = False
+    PRINT_THRESHOLDS = True
+
+    if PRINT_THRESHOLDS:
+        if len(sys.argv) < 3:
+            raise Exception("Missing argument(s). Usage: python ndcp.py [N] [D].")
+        
+        N = int(sys.argv[1])
+        D = int(sys.argv[2])
+
+        for q in range(1, N + 1):
+            for uD in [q - 0.5, q]:
+                print("Definer utility:", uD)
+                if uD == q:
+                    min_threshold = min(threshold_i_integral(N, D, q), threshold_ii_integral(N, D, q), threshold_iii_integral(N, D, q))
+                else:
+                    min_threshold = min(threshold_I_half_integral(N, D, q), threshold_II_half_integral(N, D, q), threshold_III_half_integral(N, D, q))
+                    if uD == 3.5:
+                        print("\t", threshold_I_half_integral(N, D, q))
+                        print("\t", threshold_II_half_integral(N, D, q))
+                        print("\t", threshold_III_half_integral(N, D, q))
+                        
+                print("\tMinimum vote-share:", min_threshold)
+        
 
     if PLOT_UTILITY:
         if len(sys.argv) < 3:
