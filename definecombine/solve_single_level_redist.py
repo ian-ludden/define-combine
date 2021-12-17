@@ -12,7 +12,7 @@ NUM_DISTRICTS = 10
 NUM_UNITS = NUM_ROWS * NUM_COLS
 UNITS_PER_DISTRICT = NUM_UNITS // NUM_DISTRICTS
 
-NUM_DEFINER_SUPPORTERS = int(NUM_UNITS * 0.55)
+NUM_DEFINER_SUPPORTERS = int(NUM_UNITS * 0.48)#0.55)
 NUM_OTHER_SUPPORTERS = NUM_UNITS - NUM_DEFINER_SUPPORTERS
 
 def index_to_row_col_tuple(index):
@@ -23,8 +23,24 @@ if __name__ == '__main__':
         random.seed(2021) # For reproducibility
         assert(NUM_UNITS // NUM_DISTRICTS == NUM_UNITS / NUM_DISTRICTS) # Require exact population balance
 
+        print("Definer has", NUM_DEFINER_SUPPORTERS, "supporters.")
+
         unit_weights = [-1] * NUM_OTHER_SUPPORTERS + [1] * NUM_DEFINER_SUPPORTERS
         random.shuffle(unit_weights)
+
+        # Print voter distribution
+        index = 0
+        while index < NUM_UNITS:
+            if index % NUM_COLS == 0:
+                print()
+            
+            weight = unit_weights[index]
+            output_char = 1 if weight == 1 else 0 # Use 0 to represent -1 since it's a single character
+            print(output_char, end='')
+
+            index += 1
+        
+        print()
 
         # Create MIP model
         m = gp.Model("mip_redist")
@@ -42,7 +58,12 @@ if __name__ == '__main__':
                 x2, y2 = index_to_row_col_tuple(j)
                 d[i, j] = (x1 - x2)**2 + (y1 - y2)**2
 
-        x = m.addVars(unit_ids, unit_ids, name="x", vtype=GRB.BINARY, obj=d)
+        x = m.addVars(unit_ids, unit_ids, name="x", vtype=GRB.BINARY)#, obj=d)
+
+        # Create variables a_{j} and b_{j}, indicators for whether 
+        # the district centered at j is a win for party a (resp., party b)
+        a = m.addVars(unit_ids, name="a", vtype=GRB.BINARY, obj=-1)
+        b = m.addVars(unit_ids, name="b", vtype=GRB.BINARY, obj=1)
 
         # Create edges for grid graph
         # x_edges = set()
@@ -74,6 +95,27 @@ if __name__ == '__main__':
                 if i == j: continue; # Only need this constraint for distinct i, j
                 m.addConstr(x[i, j] - x[j, j] <= 0, "onlycenters[%s, %s]" % (i, j))
         
+        # Add constraints: 
+        # a_{j} is 1 if and only if definer, party a, wins district centered at j;
+        # b_{j} is 1 if and only if combiner, barty b, wins district centered at j. 
+        for j in unit_ids:
+            m.addConstr(sum(x[i, j] * unit_weights[i] 
+                for i in unit_ids) <= UNITS_PER_DISTRICT * a[j], 
+                "a def1 %s" % (j))
+        
+            m.addConstr(sum(x[i, j] * unit_weights[i]
+                for i in unit_ids) >= 1 - (UNITS_PER_DISTRICT + 1) * (1 - a[j]), 
+                "a def2 %s" % (j))
+
+            m.addConstr(sum(x[i, j] * unit_weights[i] * (-1)
+                for i in unit_ids) <= UNITS_PER_DISTRICT * b[j], 
+                "b def1 %s" % (j))
+
+            m.addConstr(sum(x[i, j] * unit_weights[i] * (-1)
+                for i in unit_ids) >= 1 - (UNITS_PER_DISTRICT + 1) * (1 - b[j]), 
+                "b def2 %s" % (j))
+
+
         # Optimize model
         m.optimize()
         print('Obj: %g' % m.objVal)
@@ -85,6 +127,7 @@ if __name__ == '__main__':
 
         for v in m.getVars():
             var_name_parts = re.split('\[|,|\]', v.varName)
+            if not (var_name_parts[0] == 'x'): continue
             i = int(var_name_parts[-3])
             j = int(var_name_parts[-2])
 
@@ -101,6 +144,22 @@ if __name__ == '__main__':
         print(partition_dict)
         print()
 
+        count_a_wins = 0
+        count_b_wins = 0
+        for key in partition_dict:
+            district_weight = 0
+            for unit_id in partition_dict[key]:
+                district_weight += unit_weights[unit_id]
+            print('District centered at unit', key, 'has total weight', district_weight)
+            if district_weight > 0:
+                count_a_wins += 1
+            if district_weight < 0:
+                count_b_wins += 1
+            
+        print('Wins for a:\t', count_a_wins)
+        print('Wins for b:\t', count_b_wins)
+        print('Ties:      \t', NUM_DISTRICTS - count_a_wins - count_b_wins)
+
         print('\nAssignment dict:')
         print(assignment_dict)
         print()
@@ -114,7 +173,6 @@ if __name__ == '__main__':
             if index % NUM_COLS == 0:
                 print()
             
-            i, j = index_to_row_col_tuple(index)
             print(center_to_char[assignment_dict[index]], end='')
 
             index += 1
