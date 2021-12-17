@@ -68,3 +68,36 @@ District breakdown (vote-shares for a):
 1 *  8 = 8
 
 Total: 96
+
+
+
+vote-share 43%:
+Definer has 86 supporters.
+
+00011111000101000000
+11111101001001000100
+10110000010101000001
+01111000001111000100
+11101101000110000100
+01100001001011100000
+00100101101100111000
+01000100100111111110
+00000101011001111111
+00000100001100100110
+
+Explored 21414 nodes (14652388 simplex iterations) in 11524.38 seconds
+Thread count was 4 (of 4 available processors)
+
+District centered at unit 10 has total weight 2
+District centered at unit 1 has total weight 2
+District centered at unit 2 has total weight -18
+District centered at unit 3 has total weight 2
+District centered at unit 4 has total weight 2
+District centered at unit 5 has total weight 2
+District centered at unit 6 has total weight 2
+District centered at unit 7 has total weight 2
+District centered at unit 8 has total weight -16
+District centered at unit 9 has total weight -8
+Wins for a:      7
+Wins for b:      3
+Ties:            0

@@ -12,7 +12,7 @@ NUM_DISTRICTS = 10
 NUM_UNITS = NUM_ROWS * NUM_COLS
 UNITS_PER_DISTRICT = NUM_UNITS // NUM_DISTRICTS
 
-NUM_DEFINER_SUPPORTERS = int(NUM_UNITS * 0.48)#0.55)
+NUM_DEFINER_SUPPORTERS = int(NUM_UNITS * 0.43)#0.55)
 NUM_OTHER_SUPPORTERS = NUM_UNITS - NUM_DEFINER_SUPPORTERS
 
 def index_to_row_col_tuple(index):
@@ -114,6 +114,9 @@ if __name__ == '__main__':
             m.addConstr(sum(x[i, j] * unit_weights[i] * (-1)
                 for i in unit_ids) >= 1 - (UNITS_PER_DISTRICT + 1) * (1 - b[j]), 
                 "b def2 %s" % (j))
+
+        
+        # TODO: add contiguity constraints (either flow-based, SHIR, or separator-based, CUT)
 
 
         # Optimize model
