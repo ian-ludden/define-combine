@@ -5,14 +5,14 @@ import numpy as np
 import random
 import re
 
-NUM_ROWS = 10
-NUM_COLS = 20
-NUM_DISTRICTS = 10
+NUM_ROWS = 4
+NUM_COLS = 6
+NUM_DISTRICTS = 4
 
 NUM_UNITS = NUM_ROWS * NUM_COLS
 UNITS_PER_DISTRICT = NUM_UNITS // NUM_DISTRICTS
 
-NUM_DEFINER_SUPPORTERS = int(NUM_UNITS * 0.43)#0.55)
+NUM_DEFINER_SUPPORTERS = int(NUM_UNITS * 0.50)
 NUM_OTHER_SUPPORTERS = NUM_UNITS - NUM_DEFINER_SUPPORTERS
 
 def index_to_row_col_tuple(index):
@@ -66,12 +66,38 @@ if __name__ == '__main__':
         b = m.addVars(unit_ids, name="b", vtype=GRB.BINARY, obj=1)
 
         # Create edges for grid graph
-        # x_edges = set()
-        # for i, j in unit_ids:
-        #     for u, v in unit_ids:
-        #         if abs(i - u) + abs(j - v) == 1:
-        #             x_edges.add((i,j), (u,v))
-     
+        x_edges = set()
+        for u in unit_ids:
+            row_u, col_u = index_to_row_col_tuple(u)
+            for v in unit_ids:
+                row_v, col_v = index_to_row_col_tuple(v)
+                if abs(row_u - row_v) + abs(col_u - col_v) == 1:
+                    x_edges.add((u, v))
+                    x_edges.add((v, u))
+
+        edges_in = []
+        edges_out = []
+        for u in unit_ids:
+            edges_in_u = []
+            edges_out_u = []
+            for x_edge in x_edges:
+                if x_edge[1] == u:
+                    edges_in_u.append(x_edge)
+                if x_edge[0] == u:
+                    edges_out_u.append(x_edge)
+            
+            edges_in.append(edges_in_u)
+            edges_out.append(edges_out_u)
+        
+        all_directed_edges_possible_duplicates = []
+        for u in unit_ids:
+            all_directed_edges_possible_duplicates.extend(edges_in[u])
+            all_directed_edges_possible_duplicates.extend(edges_out[u])
+
+        all_directed_edges = list(set(all_directed_edges_possible_duplicates))
+
+        # Create flow variables for SHIR contiguity
+        f = m.addVars(unit_ids, all_directed_edges, name="f", vtype=GRB.CONTINUOUS) # use default lower bound of 0
     
         # Set objective: maximize compactness in terms of Hess objective, squared distances
         # m.setObjective(d @ x, GRB.MAXIMIZE)
@@ -116,7 +142,19 @@ if __name__ == '__main__':
                 "b def2 %s" % (j))
 
         
-        # TODO: add contiguity constraints (either flow-based, SHIR, or separator-based, CUT)
+        # Add flow-based (SHIR) contiguity constraints (alternative is separator-based, CUT, from Lykhovyd, Validi & Buchanan 2021)
+        for j in unit_ids:
+            for u in unit_ids:
+                if u == j: continue
+                # 1. Flow out minus flow in is equal to assignment
+                m.addConstr(sum(f[j, uv[0], uv[1]] for uv in edges_out[u]) 
+                            - sum(f[j, vu[0], vu[1]] for vu in edges_in[u]) 
+                            == x[u, j], "flow is assignment %s %s" % (j, u))
+                # 2. Flow is at most UNITS_PER_DISTRICT times assignment
+                m.addConstr(sum(f[j, uv[0], uv[1]] for uv in edges_out[u]) <= (UNITS_PER_DISTRICT) * x[u, j], "flow capacity %s %s" % (j, u))
+            
+            # 3. Flow leaving center to itself is zero
+            m.addConstr(sum(f[j, jv[0], jv[1]] for jv in edges_out[j]) == 0, "flow zero %s" % (j))
 
 
         # Optimize model
