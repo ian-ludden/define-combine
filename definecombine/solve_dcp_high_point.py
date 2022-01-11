@@ -110,9 +110,13 @@ if __name__ == '__main__':
             (x.sum(i, '*') == 1 
                 for i in unit_ids), "fullyassigned")
 
-        # # # Add constraints: every subdistrict has exactly NUM_UNITS / NUM_SUBDISTRICTS units
+        # Add constraints: every subdistrict has exactly NUM_UNITS / NUM_SUBDISTRICTS units (perfect population balance)
         for j in unit_ids:
-            m.addConstr(sum(x[i, j] for i in unit_ids) == UNITS_PER_SUBDISTRICT * x[j, j], "districtsize %s" % (j))
+            m.addConstr(sum(x[i, j] for i in unit_ids) == UNITS_PER_SUBDISTRICT * x[j, j], "subdistrict size %s" % (j))
+
+        # Add constraints: every district has exactly NUM_UNITS / NUM_DISTRICTS units (perfect population balance)
+        for j in unit_ids:
+            m.addConstr(sum(y[i, j] for i in unit_ids) == UNITS_PER_DISTRICT * y[j, j], "district size %s" % (j))
 
         # Add constraints: can only assign to centers
         for i in unit_ids:
