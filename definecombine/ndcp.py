@@ -1,4 +1,5 @@
 from math import floor, ceil
+from re import L
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
@@ -90,6 +91,73 @@ def max_pack_minus_one(pA, N, D):
         i = i % (2 * N)
     
     return subdistA
+
+
+
+def t21(pA, N, D):
+    q = floor((pA // D - 1) / 2.)
+    subdistA = np.zeros((2*N,))
+    for i in range(2 * q - 1):
+        subdistA[i] = D
+    
+    pArem = pA - (2 * q - 1) * D
+
+    i = 2 * q - 1
+    while pArem > 0:
+        if subdistA[i] < D:
+            subdistA[i] += 1
+            pArem -= 1
+        i += 1
+        i = i % (2 * N)
+    return subdistA
+
+
+def t22(pA, N, D):
+    # Make two ceil(D/2) subdistricts, then as many floor(D/2) + 1 as possible
+    subdistA = np.zeros((2*N,))
+    subdistA[0] = ceil(D / 2)
+    subdistA[1] = ceil(D / 2)
+
+    pArem = pA - sum(subdistA)
+
+    i = 2
+    while pArem >= floor(D / 2 + 1):
+        subdistA[i] += floor(D / 2) + 1
+        pArem -= subdistA[i]
+        i += 1
+        i = i % (2 * N)
+    
+    subdistA[i] += pArem # Allocate any leftovers
+
+    return subdistA
+
+
+def t23(pA, N, D):
+    q = 2
+    while (2 * q - 1) * (D - 1) + (2 * N - 2 * q) * 2 + 1 <= pA:
+        q += 1
+    q -= 1
+
+    # Make 2q - 1 subdistricts with D - 1, then one with 1, then 2 * N - 2 * q with 2.
+    subdistA = np.zeros((2*N,))
+    for i in range(2 * q - 1):
+        subdistA[i] = D - 1
+
+    subdistA[2 * q - 1] = 1
+
+    for i in range(2 * q, 2 * N):
+        subdistA[i] = 2
+
+    pArem = pA - sum(subdistA)
+
+    i = 0
+    while pArem > 0: # Evenly distribute remainder
+        subdistA[i] += 1
+        pArem -= 1
+        i += 1
+        i = i % (2 * N)
+    return subdistA
+
 
 def random_subdistricts(pA, N, D):
     # Randomly allocates pA across the subdistricts
@@ -220,11 +288,11 @@ Returns:
     list of definer vote-shares in each district, sorted ascending
 """
 def district_vote_shares(N, D, definer_votes):
-    best_definer_utility = N + 1
+    best_definer_utility = 0
     best_district_vote_shares = None
     # Find min-weight perfect matching for each of the three definer strategies considered
     subdistricts = []
-    for index, definer_strategy in enumerate([max_pack, max_crack, max_pack_minus_one]):
+    for index, definer_strategy in enumerate([max_pack, max_crack, max_pack_minus_one, t21, t22, t23]):
         subdistricts.append(definer_strategy(definer_votes, N, D))
 
         mwpm, G = combine_optimally(subdistricts[index], N, D)
@@ -233,7 +301,7 @@ def district_vote_shares(N, D, definer_votes):
         for u, v in mwpm:
             mwpm_val += G[u][v]['weight']
         
-        if mwpm_val < best_definer_utility:
+        if mwpm_val >= best_definer_utility:
             best_definer_utility = mwpm_val
             best_district_vote_shares = [subdistricts[index][u] + subdistricts[index][v] for u, v in mwpm]
     
