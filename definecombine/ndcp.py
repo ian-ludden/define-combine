@@ -402,9 +402,9 @@ def plot_utility_curve(N, D, output_filename=None):
     # plt.plot(x2, y2, '--')
     # plt.legend(['Exact', 'Conjectured Asymptotic'])
 
-    x2, y2 = seats_votes_curve(N, D, N * D)
+    x2, y2 = seats_votes_curve(N, D, N * D - 1)
     plt.plot(x2, y2, '--')
-    plt.legend(['Protocol Seats-Votes Curve', 'Seats-Votes Curve from 50% vote-share map'])
+    plt.legend(['Protocol Seats-Votes Curve', 'Map Seats-Votes Curve (23/25 split)'])
 
 
     if output_filename:
