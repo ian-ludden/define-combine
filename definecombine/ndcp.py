@@ -300,9 +300,11 @@ def district_vote_shares(N, D, definer_votes):
         mwpm_val = 0.0
         for u, v in mwpm:
             mwpm_val += G[u][v]['weight']
+
+        definer_utility = N - mwpm_val
         
-        if mwpm_val >= best_definer_utility:
-            best_definer_utility = mwpm_val
+        if definer_utility >= best_definer_utility:
+            best_definer_utility = definer_utility
             best_district_vote_shares = [subdistricts[index][u] + subdistricts[index][v] for u, v in mwpm]
     
     if not best_district_vote_shares:
@@ -327,6 +329,7 @@ Returns:
 """
 def seats_votes_curve(N, D, definer_votes):
     vs = district_vote_shares(N, D, definer_votes)
+    print('District vote-shares from DCP({},{},{}): {}'.format(N, D, definer_votes, vs))
     unique_vals, counts = np.unique(vs, return_counts=True)
     x = [0]
     y = [0]
@@ -381,9 +384,8 @@ def plot_utility_curve(N, D, output_filename=None):
         x[i] = min_threshold
 
     # Double all intermediate values to achieve step function, and add top right point
-    y = np.repeat(y, 2)[1:]
-    y = np.append(y, [N])
-    x = np.repeat(x, 2)[:-1]
+    y = np.repeat(y, 2)
+    x = np.repeat(x, 2)[1:]
     x = np.append(x, [2 * N * D])
 
     plt.plot(x, y)
@@ -415,7 +417,7 @@ def plot_utility_curve(N, D, output_filename=None):
 if __name__ == '__main__':
     SEARCH_FOR_COUNTEREXAMPLES = False
     PLOT_UTILITY = True
-    PRINT_THRESHOLDS = True
+    PRINT_THRESHOLDS = False
 
     if PRINT_THRESHOLDS:
         if len(sys.argv) < 3:
