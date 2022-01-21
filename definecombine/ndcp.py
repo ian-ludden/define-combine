@@ -385,52 +385,53 @@ def plot_utility_curve(N, D, output_filename=None):
         x[i] = min_threshold
 
     # Double all intermediate values to achieve step function, and add top right point
-    y = np.repeat(y, 2)
-    x = np.repeat(x, 2)[1:]
-    x = np.append(x, [2 * N * D])
+    # y = np.repeat(y, 2)
+    # x = np.repeat(x, 2)[1:]
+    # x = np.append(x, [2 * N * D])
 
-    plt.plot(x, y)
-    plt.xlabel("Definer Vote-Share")
-    plt.ylabel("Definer Utility")
+    # plt.plot(x, y)
+    # plt.xlabel("Definer Vote-Share")
+    # plt.ylabel("Definer Utility")
 
-    plt.title(f"Definer Utility Curve for $N$ = {N}, $D$ = {D}")
-    plt.xticks(np.linspace(0, 2 * N * D, 2 * N + 1))
-    if N > 10:
-        plt.xticks(np.linspace(0, 2 * N * D, 13))
+    # plt.title(f"Definer Utility Curve for $N$ = {N}, $D$ = {D}")
+    # plt.xticks(np.linspace(0, 2 * N * D, 2 * N + 1))
+    # if N > 10:
+    #     plt.xticks(np.linspace(0, 2 * N * D, 13))
     
     # Plot conjectured asymptotic utility curve
-    # x2 = [0, 2 / 3. * N * D, N * D, 2 * N * D]
-    # x2 = [xi / (2. * N * D) for xi in x2]
-    # y2 = [0, N / 3., N, N]
-    # y2 = [yi / N for yi in y2]
-    # plt.plot(x2, y2, linestyle='solid')
-    # plt.legend(['Exact', 'Conjectured Asymptotic'])
+    x2 = [0, 2 / 3. * N * D, N * D, 2 * N * D]
+    x2 = [xi / (2. * N * D) for xi in x2]
+    y2 = [0, N / 3., N, N]
+    y2 = [yi / N for yi in y2]
+    plt.plot(x2, y2, linestyle='solid')
+    plt.legend(['Exact', 'Conjectured Asymptotic'])
 
-    # x2, y2 = seats_votes_curve(N, D, N * D - 1)
-    # plt.plot(x2, y2, '--')
-    # plt.legend(['Protocol Seats-Votes Curve', 'Map Seats-Votes Curve (23/25 split)'])
+    # ICYF
+    x3 = np.linspace(0, 1, 10001)
+    y3 = np.zeros(x3.shape)
+    for i, xi in enumerate(x3):
+        if xi <= 0.5:
+            y3[i] = 2 * (xi ** 2)
+        else:
+            y3[i] = 1 - 2 * (1 - xi) ** 2
+    plt.plot(x3, y3, linestyle='dashdot')
 
-    # # ICYF
-    # x3 = np.linspace(0, 1, 10001)
-    # y3 = np.zeros(x3.shape)
-    # for i, xi in enumerate(x3):
-    #     if xi <= 0.5:
-    #         y3[i] = 2 * (xi ** 2)
-    #     else:
-    #         y3[i] = 1 - 2 * (1 - xi) ** 2
-    # plt.plot(x3, y3, linestyle='dashdot')
+    # Bisection
+    x4 = [0, 1]
+    y4 = [0, 1]
+    plt.plot(x4, y4, linestyle='dotted')
 
-    # # Bisection
-    # x4 = [0, 1]
-    # y4 = [0, 1]
-    # plt.plot(x4, y4, linestyle='dotted')
+    # One party draws all (One-sided)
+    x5 = [0, 0.5, 1]
+    y5 = [0, 1, 1]
+    plt.plot(x5, y5, linestyle='dashed')
 
-    # plt.xticks(np.linspace(0, 1, 11))
+    plt.xticks(np.linspace(0, 1, 11))
 
-    # plt.xlabel("Player 1 Fractional Vote-Share")
-    # plt.ylabel("Player 1 Utility")
-    # plt.legend(['DCP', 'I-cut-you-freeze', 'Bisection'])
-    # plt.title('Limiting Nongeometric Utility Curves for Redistricting Protocols')
+    plt.xlabel("Player 1 Fractional Vote-Share")
+    plt.ylabel("Player 1 Utility")
+    plt.legend(['DCP', 'I-cut-you-freeze', 'Bisection', 'Player 1 only'])
+    plt.title('Limiting Nongeometric Utility Curves for Redistricting Protocols')
 
     if output_filename:
         plt.savefig(output_filename, dpi=200)
