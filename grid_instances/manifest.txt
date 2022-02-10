@@ -1,0 +1,24 @@
+This folder contains small grid instances for testing the bisection protocol. 
+
+Assumptions/Constants:
+- Every unit has the same population. 
+- All instances have exactly 50% vote-share. 
+- A '1' indicates the unit fully supports the first player; a '0', the second player. 
+
+4 columns by 6 rows:
+    01. 4x6_north_south.txt, a north/south divide
+    02. 4x6_large_city.txt, where the first party is concentrated in a large metropolitan area along the west edge of the grid
+    03. 4x6_opposite_corner_cities.txt, wher the first party is concentrated in metropolitan areas in the NW and SE corners 
+
+6 columns by 6 rows:
+    04. 6x6_north_south.txt, a north/south divide
+    05. 6x6_large_city.txt, where the first party is concentrated in a large metropolitan area along the west edge of the grid
+    06. 6x6_opposite_corner_cities.txt, wher the first party is concentrated in metropolitan areas in the NW and SE corners 
+
+Short names:
+4x6_north_south             -> 01
+4x6_large_city              -> 02
+4x6_opposite_corner_cities  -> 03
+6x6_north_south             -> 04
+6x6_large_city              -> 05
+6x6_opposite_corner_cities  -> 06
