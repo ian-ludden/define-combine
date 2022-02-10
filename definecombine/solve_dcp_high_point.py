@@ -5,8 +5,8 @@ import numpy as np
 import random
 import re
 
-NUM_ROWS = 4
-NUM_COLS = 6
+NUM_ROWS = 6
+NUM_COLS = 8
 NUM_DISTRICTS = 4
 NUM_SUBDISTRICTS = 2 * NUM_DISTRICTS
 
@@ -101,6 +101,14 @@ if __name__ == '__main__':
         # Create both-units-are-subdistrict-centers variables
         z = m.addVars(unit_ids, unit_ids, name="z", vtype=GRB.BINARY)
     
+
+        # Add constraint: force all assignments in x and y to go from lower units to higher units
+        for i in unit_ids:
+            for j in unit_ids:
+                if j < i:
+                    m.addConstr(x[i, j] == 0, "forced_zero_x_{}_{}".format(i, j))
+                    m.addConstr(y[i, j] == 0, "forced_zero_y_{}_{}".format(i, j))
+        
 
         # Add constraint: sum of x_{jj} = NUM_SUBDISTRICTS
         m.addConstr(sum(x[i, i] for i in unit_ids) == NUM_SUBDISTRICTS, "num_subdistricts")
