@@ -1,0 +1,3 @@
+This folder contains enumerations of partitions of grid graphs into polyominoes, produced by https://github.com/zschutzman/enumerator. 
+
+The filename "enum_[c,r]_[s]_n_rc.txt" denotes a grid graph with c columns and r rows partitioned into n parts (districts) of size s. 
