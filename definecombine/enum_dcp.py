@@ -3,9 +3,28 @@ import networkx as nx
 import numpy as np
 import sys
 
-# TODO: Enumerative approach to solving DCP on grid instances, 
-# similar to optimal recursive bisection on grid graphs
+"""
+Solve DCP on a grid graph by exhaustive search 
+over all possible definer strategies (subdistrict partitions) 
+and finding the best combiner response (perfect matching) for each. 
 
+Parameters:
+===============
+    num_rows - number of rows in grid graph
+    num_cols - number of columns in grid graph
+    num_districts - number of districts
+    voter_grid - 2-D NumPy array with shape (num_rows, num_cols)
+                 with entry [i,j] == 1 (0) if 
+                 unit (i,j) is for definer (combiner)
+
+Returns:
+===============
+    best_assignment_grid - best subdistrict partition (optimal definer strategy)
+    best_definer_utility - maximum definer utility under optimal play
+    best_combiner_matching - combiner's best response to the subdistrict partition 
+                             represented by best_assignment_grid
+    best_subdistrict_votes - combiner vote counts for each subdistrict in best_assignment_grid
+"""
 def solve_dcp_grid(num_rows, num_cols, num_districts, voter_grid):
     num_subdistricts = 2 * num_districts
     units_per_subdistrict = (num_rows * num_cols) // num_subdistricts
