@@ -5,8 +5,8 @@ import numpy as np
 import random
 import re
 
-NUM_ROWS = 6
-NUM_COLS = 8
+NUM_ROWS = 4
+NUM_COLS = 6
 NUM_DISTRICTS = 4
 NUM_SUBDISTRICTS = 2 * NUM_DISTRICTS
 
@@ -222,28 +222,47 @@ if __name__ == '__main__':
         assignment_dict = {}
         tol = m.Params.IntFeasTol
 
+        x_vals = np.zeros((NUM_UNITS, NUM_UNITS))
+
         for v in m.getVars():
             var_name_parts = re.split('\[|,|\]', v.varName)
             if not (var_name_parts[0] == 'x'): continue
             i = int(var_name_parts[-3])
             j = int(var_name_parts[-2])
 
-            if v.x >= 1 - tol:
-                if j not in partition_dict:
-                    j_row, j_col = index_to_row_col_tuple(j)
-                    print('Unit %g at (%g, %g) is a subdistrict center.' % (j, j_row, j_col))
-                    partition_dict[j] = set()
-                
-                partition_dict[j].add(i)
-                assignment_dict[i] = j
-           
-        print('\nPartition dict:')
-        print(partition_dict)
-        print()
+            x_vals[i, j] = v.x
 
+            # if v.x >= 0.5: #1 - tol:
+            #     if j not in partition_dict:
+            #         j_row, j_col = index_to_row_col_tuple(j)
+            #         print('Unit %g at (%g, %g) is a subdistrict center.' % (j, j_row, j_col))
+            #         partition_dict[j] = set()
+                
+            #     partition_dict[j].add(i)
+            #     assignment_dict[i] = j
+        
+        # print(x_vals)
+
+        # Assign each unit to the unit with max weight in x
+        assignments = np.argmax(x_vals, axis=1)
+        print(assignments)
+
+        assignment_dict = {unit_id: assignments[unit_id] for unit_id in unit_ids}
+        for subdistrict_center in np.unique(assignments):
+            units_in_subdistrict = set()
+            for unit_id in unit_ids:
+                if assignment_dict[unit_id] == subdistrict_center:
+                    units_in_subdistrict.add(unit_id)
+            partition_dict[subdistrict_center] = units_in_subdistrict
+           
+        # print('\nPartition dict:')
+        # print(partition_dict)
+        # print()
 
         y_partition_dict = {}
         y_assignment_dict = {}
+
+        y_vals = np.zeros((NUM_UNITS, NUM_UNITS))
 
         for v in m.getVars():
             var_name_parts = re.split('\[|,|\]', v.varName)
@@ -251,18 +270,35 @@ if __name__ == '__main__':
             i = int(var_name_parts[-3])
             j = int(var_name_parts[-2])
 
-            if v.x >= 1 - tol:
-                if j not in y_partition_dict:
-                    j_row, j_col = index_to_row_col_tuple(j)
-                    print('Unit %g at (%g, %g) is a district center.' % (j, j_row, j_col))
-                    y_partition_dict[j] = set()
+            y_vals[i, j] = v.x
+
+            # if v.x >= 0.5: #1 - tol:
+            #     if j not in y_partition_dict:
+            #         j_row, j_col = index_to_row_col_tuple(j)
+            #         print('Unit %g at (%g, %g) is a district center.' % (j, j_row, j_col))
+            #         y_partition_dict[j] = set()
                 
-                y_partition_dict[j].add(i)
-                y_assignment_dict[i] = j
+            #     y_partition_dict[j].add(i)
+            #     y_assignment_dict[i] = j
            
-        print('\ny partition dict:')
-        print(y_partition_dict)
-        print()
+
+        # print(y_vals)
+
+        # Assign each unit to the unit with max weight in y
+        y_assignments = np.argmax(y_vals, axis=1)
+        print(y_assignments)
+
+        y_assignment_dict = {unit_id: y_assignments[unit_id] for unit_id in unit_ids}
+        for district_center in np.unique(y_assignments):
+            units_in_district = set()
+            for unit_id in unit_ids:
+                if y_assignment_dict[unit_id] == district_center:
+                    units_in_district.add(unit_id)
+            y_partition_dict[district_center] = units_in_district
+
+        # print('\ny partition dict:')
+        # print(y_partition_dict)
+        # print()
 
 
         count_a_wins = 0
@@ -281,9 +317,9 @@ if __name__ == '__main__':
         print('Wins for b:\t', count_b_wins)
         print('Ties:      \t', NUM_DISTRICTS - count_a_wins - count_b_wins)
 
-        print('\ny assignment dict:')
-        print(y_assignment_dict)
-        print()
+        # print('\ny assignment dict:')
+        # print(y_assignment_dict)
+        # print()
 
         # Print visualization of solution (district plan) using letters for districts
         centers = sorted([key for key in y_partition_dict])
@@ -314,6 +350,147 @@ if __name__ == '__main__':
             index += 1
         
         print()
+    
+        #m.addConstr()
+        print("\n*** RESET and RESOLVE ***\n")        
+        m.reset()
+        m.addConstr(x[0, 6] == 0, "forced_zero_x_{}_{}".format(0, 6))
+        m.optimize()
+
+        # Check which units are subdistrict centers, and extract subdistrict partition
+        partition_dict = {}
+        assignment_dict = {}
+        tol = m.Params.IntFeasTol
+
+        x_vals = np.zeros((NUM_UNITS, NUM_UNITS))
+
+        for v in m.getVars():
+            var_name_parts = re.split('\[|,|\]', v.varName)
+            if not (var_name_parts[0] == 'x'): continue
+            i = int(var_name_parts[-3])
+            j = int(var_name_parts[-2])
+
+            x_vals[i, j] = v.x
+
+            # if v.x >= 0.5: #1 - tol:
+            #     if j not in partition_dict:
+            #         j_row, j_col = index_to_row_col_tuple(j)
+            #         print('Unit %g at (%g, %g) is a subdistrict center.' % (j, j_row, j_col))
+            #         partition_dict[j] = set()
+                
+            #     partition_dict[j].add(i)
+            #     assignment_dict[i] = j
+        
+        # print(x_vals)
+
+        # Assign each unit to the unit with max weight in x
+        assignments = np.argmax(x_vals, axis=1)
+        print(assignments)
+
+        assignment_dict = {unit_id: assignments[unit_id] for unit_id in unit_ids}
+        for subdistrict_center in np.unique(assignments):
+            units_in_subdistrict = set()
+            for unit_id in unit_ids:
+                if assignment_dict[unit_id] == subdistrict_center:
+                    units_in_subdistrict.add(unit_id)
+            partition_dict[subdistrict_center] = units_in_subdistrict
+           
+        # print('\nPartition dict:')
+        # print(partition_dict)
+        # print()
+
+        y_partition_dict = {}
+        y_assignment_dict = {}
+
+        y_vals = np.zeros((NUM_UNITS, NUM_UNITS))
+
+        for v in m.getVars():
+            var_name_parts = re.split('\[|,|\]', v.varName)
+            if not (var_name_parts[0] == 'y'): continue
+            i = int(var_name_parts[-3])
+            j = int(var_name_parts[-2])
+
+            y_vals[i, j] = v.x
+
+            # if v.x >= 0.5: #1 - tol:
+            #     if j not in y_partition_dict:
+            #         j_row, j_col = index_to_row_col_tuple(j)
+            #         print('Unit %g at (%g, %g) is a district center.' % (j, j_row, j_col))
+            #         y_partition_dict[j] = set()
+                
+            #     y_partition_dict[j].add(i)
+            #     y_assignment_dict[i] = j
+           
+
+        # print(y_vals)
+
+        # Assign each unit to the unit with max weight in y
+        y_assignments = np.argmax(y_vals, axis=1)
+        print(y_assignments)
+
+        y_assignment_dict = {unit_id: y_assignments[unit_id] for unit_id in unit_ids}
+        for district_center in np.unique(y_assignments):
+            units_in_district = set()
+            for unit_id in unit_ids:
+                if y_assignment_dict[unit_id] == district_center:
+                    units_in_district.add(unit_id)
+            y_partition_dict[district_center] = units_in_district
+
+        # print('\ny partition dict:')
+        # print(y_partition_dict)
+        # print()
+
+
+        count_a_wins = 0
+        count_b_wins = 0
+        for key in y_partition_dict:
+            district_weight = 0
+            for unit_id in y_partition_dict[key]:
+                district_weight += unit_weights[unit_id]
+            print('District centered at unit', key, 'has total weight', district_weight)
+            if district_weight > 0:
+                count_a_wins += 1
+            if district_weight < 0:
+                count_b_wins += 1
+            
+        print('Wins for a:\t', count_a_wins)
+        print('Wins for b:\t', count_b_wins)
+        print('Ties:      \t', NUM_DISTRICTS - count_a_wins - count_b_wins)
+
+        # print('\ny assignment dict:')
+        # print(y_assignment_dict)
+        # print()
+
+        # Print visualization of solution (district plan) using letters for districts
+        centers = sorted([key for key in y_partition_dict])
+        center_to_char = {centers[i] : chr(65 + i) for i in range(len(centers))}
+
+        index = 0
+        while index < NUM_UNITS:
+            if index % NUM_COLS == 0:
+                print()
+            
+            print(center_to_char[y_assignment_dict[index]], end='')
+
+            index += 1
+        
+        print()
+
+        # Also print visualization of subdistrict plan, using letters for subdistricts
+        centers = sorted([key for key in partition_dict])
+        center_to_char = {centers[i] : chr(65 + i) for i in range(len(centers))}
+
+        index = 0
+        while index < NUM_UNITS:
+            if index % NUM_COLS == 0:
+                print()
+            
+            print(center_to_char[assignment_dict[index]], end='')
+
+            index += 1
+        
+        print()
+
 
     except gp.GurobiError as e:
         print('Error code ' + str(e.errno) + ': ' + str(e))
