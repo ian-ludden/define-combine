@@ -7,9 +7,9 @@ import numpy as np
 import random
 import re
 
-NUM_ROWS = 4
-NUM_COLS = 6
-NUM_DISTRICTS = 4
+NUM_ROWS = 8
+NUM_COLS = 12
+NUM_DISTRICTS = 6
 NUM_SUBDISTRICTS = 2 * NUM_DISTRICTS
 
 NUM_UNITS = NUM_ROWS * NUM_COLS
