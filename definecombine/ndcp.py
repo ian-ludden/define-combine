@@ -1,5 +1,7 @@
 from math import floor, ceil
-import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use("TkAgg")
+from matplotlib import pyplot as plt
 import networkx as nx
 import numpy as np
 import random
@@ -90,6 +92,73 @@ def max_pack_minus_one(pA, N, D):
         i = i % (2 * N)
     
     return subdistA
+
+
+
+def t21(pA, N, D):
+    q = floor((pA // D - 1) / 2.)
+    subdistA = np.zeros((2*N,))
+    for i in range(2 * q - 1):
+        subdistA[i] = D
+    
+    pArem = pA - (2 * q - 1) * D
+
+    i = 2 * q - 1
+    while pArem > 0:
+        if subdistA[i] < D:
+            subdistA[i] += 1
+            pArem -= 1
+        i += 1
+        i = i % (2 * N)
+    return subdistA
+
+
+def t22(pA, N, D):
+    # Make two ceil(D/2) subdistricts, then as many floor(D/2) + 1 as possible
+    subdistA = np.zeros((2*N,))
+    subdistA[0] = ceil(D / 2)
+    subdistA[1] = ceil(D / 2)
+
+    pArem = pA - sum(subdistA)
+
+    i = 2
+    while pArem >= floor(D / 2 + 1):
+        subdistA[i] += floor(D / 2) + 1
+        pArem -= subdistA[i]
+        i += 1
+        i = i % (2 * N)
+    
+    subdistA[i] += pArem # Allocate any leftovers
+
+    return subdistA
+
+
+def t23(pA, N, D):
+    q = 2
+    while (2 * q - 1) * (D - 1) + (2 * N - 2 * q) * 2 + 1 <= pA:
+        q += 1
+    q -= 1
+
+    # Make 2q - 1 subdistricts with D - 1, then one with 1, then 2 * N - 2 * q with 2.
+    subdistA = np.zeros((2*N,))
+    for i in range(2 * q - 1):
+        subdistA[i] = D - 1
+
+    subdistA[2 * q - 1] = 1
+
+    for i in range(2 * q, 2 * N):
+        subdistA[i] = 2
+
+    pArem = pA - sum(subdistA)
+
+    i = 0
+    while pArem > 0: # Evenly distribute remainder
+        subdistA[i] += 1
+        pArem -= 1
+        i += 1
+        i = i % (2 * N)
+    return subdistA
+
 
 def random_subdistricts(pA, N, D):
     # Randomly allocates pA across the subdistricts
@@ -205,6 +274,93 @@ def random_instance(Nmax, Dmax):
     return (pA, N, D)
 
 
+"""
+Compute district vote-shares for definer in 
+nongeometric define-combine procedure (NDCP). 
+
+Parameters:
+===============
+    N - number of districts (int)
+    D - units per subdistrict (int)
+    definer_votes - total votes (units) for the definer (int)
+
+Returns:
+===============
+    list of definer vote-shares in each district, sorted ascending
+"""
+def district_vote_shares(N, D, definer_votes):
+    best_definer_utility = 0
+    best_district_vote_shares = None
+    # Find min-weight perfect matching for each of the three definer strategies considered
+    subdistricts = []
+    for index, definer_strategy in enumerate([max_pack, max_crack, max_pack_minus_one, t21, t22, t23]):
+        subdistricts.append(definer_strategy(definer_votes, N, D))
+
+        mwpm, G = combine_optimally(subdistricts[index], N, D)
+
+        mwpm_val = 0.0
+        for u, v in mwpm:
+            mwpm_val += G[u][v]['weight']
+
+        definer_utility = N - mwpm_val
+        
+        if definer_utility >= best_definer_utility:
+            best_definer_utility = definer_utility
+            best_district_vote_shares = [subdistricts[index][u] + subdistricts[index][v] for u, v in mwpm]
+    
+    if not best_district_vote_shares:
+        raise Exception("No best definer strategy found.")
+    return [dvs * 1. / (2 * D) for dvs in best_district_vote_shares]
+
+
+"""
+Compute seats-votes curve for 
+the nongeometric define-combine procedure (NDCP).
+
+Parameters:
+===============
+    N - number of districts (int)
+    D - units per subdistrict (int)
+    definer_votes - total votes (units) for the definer (int)
+
+Returns:
+===============
+    x - list of x-coordinates of points on seats-votes curve
+    y - list of y-coordinates of points on seats-votes curve
+"""
+def seats_votes_curve(N, D, definer_votes):
+    vs = district_vote_shares(N, D, definer_votes)
+    print('District vote-shares from DCP({},{},{}): {}'.format(N, D, definer_votes, vs))
+    unique_vals, counts = np.unique(vs, return_counts=True)
+    x = [0]
+    y = [0]
+
+    for index, val in enumerate(unique_vals):
+        if val < 0.5:
+            # Determine how much must be added to total vote-share to make these districts wins
+            diff = 0.5 - val
+            vs_hypothetical = [min(v + diff, 1.0) for v in vs]
+            x_hypothetical = sum(vs_hypothetical) * D * 2
+            y_hypothetical_2 = sum(map(lambda v : v >= 0.5, vs_hypothetical))
+            y_hypothetical_1 = y_hypothetical_2 - counts[index]
+        else: # val >= 0.5
+            # Determine how much must be removed from total vote-share to make these losses
+            diff = val - 0.5
+            vs_hypothetical = [max(v - diff, 0.0) for v in vs]
+            x_hypothetical = sum(vs_hypothetical) * D * 2
+            y_hypothetical_2 = sum(map(lambda v : v >= 0.5, vs_hypothetical))
+            y_hypothetical_1 = y_hypothetical_2 - counts[index]
+
+        x.extend([x_hypothetical, x_hypothetical])
+        y.extend([y_hypothetical_1, y_hypothetical_2])
+
+    x.append(2 * N * D)
+    y.append(N)
+
+    x = sorted(x)
+    y = sorted(y)
+
+    return sorted(x), sorted(y)
 
 
 def plot_utility_curve(N, D, output_filename=None):
@@ -229,25 +385,53 @@ def plot_utility_curve(N, D, output_filename=None):
         x[i] = min_threshold
 
     # Double all intermediate values to achieve step function, and add top right point
-    y = np.repeat(y, 2)[1:]
-    y = np.append(y, [N])
-    x = np.repeat(x, 2)[:-1]
-    x = np.append(x, [2 * N * D])
+    # y = np.repeat(y, 2)
+    # x = np.repeat(x, 2)[1:]
+    # x = np.append(x, [2 * N * D])
 
-    plt.plot(x, y)
-    plt.xlabel("Definer Support ($P^D$)")
-    plt.ylabel("Definer Utility ($U_D$)")
-    plt.title(f"Definer Utility Curve for $N$ = {N}, $D$ = {D}")
-    plt.xticks(np.linspace(0, 2 * N * D, N + 1))
-    if N > 10:
-        plt.xticks(np.linspace(0, 2 * N * D, 13))
+    # plt.plot(x, y)
+    # plt.xlabel("Definer Vote-Share")
+    # plt.ylabel("Definer Utility")
+
+    # plt.title(f"Definer Utility Curve for $N$ = {N}, $D$ = {D}")
+    # plt.xticks(np.linspace(0, 2 * N * D, 2 * N + 1))
+    # if N > 10:
+    #     plt.xticks(np.linspace(0, 2 * N * D, 13))
     
     # Plot conjectured asymptotic utility curve
     x2 = [0, 2 / 3. * N * D, N * D, 2 * N * D]
+    x2 = [xi / (2. * N * D) for xi in x2]
     y2 = [0, N / 3., N, N]
-    plt.plot(x2, y2, '--')
-
+    y2 = [yi / N for yi in y2]
+    plt.plot(x2, y2, linestyle='solid')
     plt.legend(['Exact', 'Conjectured Asymptotic'])
+
+    # ICYF
+    x3 = np.linspace(0, 1, 10001)
+    y3 = np.zeros(x3.shape)
+    for i, xi in enumerate(x3):
+        if xi <= 0.5:
+            y3[i] = 2 * (xi ** 2)
+        else:
+            y3[i] = 1 - 2 * (1 - xi) ** 2
+    plt.plot(x3, y3, linestyle='dashdot')
+
+    # Bisection
+    x4 = [0, 1]
+    y4 = [0, 1]
+    plt.plot(x4, y4, linestyle='dotted')
+
+    # One party draws all (One-sided)
+    x5 = [0, 0.5, 1]
+    y5 = [0, 1, 1]
+    plt.plot(x5, y5, linestyle='dashed')
+
+    plt.xticks(np.linspace(0, 1, 11))
+
+    plt.xlabel("Player 1 Fractional Vote-Share")
+    plt.ylabel("Player 1 Utility")
+    plt.legend(['DCP', 'I-cut-you-freeze', 'Bisection', 'Player 1 only'])
+    plt.title('Limiting Nongeometric Utility Curves for Redistricting Protocols')
 
     if output_filename:
         plt.savefig(output_filename, dpi=200)
@@ -258,8 +442,8 @@ def plot_utility_curve(N, D, output_filename=None):
 
 if __name__ == '__main__':
     SEARCH_FOR_COUNTEREXAMPLES = False
-    PLOT_UTILITY = False
-    PRINT_THRESHOLDS = True
+    PLOT_UTILITY = True
+    PRINT_THRESHOLDS = False
 
     if PRINT_THRESHOLDS:
         if len(sys.argv) < 3:
@@ -298,45 +482,3 @@ if __name__ == '__main__':
         plot_utility_curve(N, D, output_filename)
 
 
-    if SEARCH_FOR_COUNTEREXAMPLES:
-        Nmax = 25
-        Dmax = 100
-        num_iterations = 1000000
-
-        num_counterexamples = 0
-        for iter_index in range(1, num_iterations + 1):
-            if iter_index % 1000 == 0:
-                print("Iteration %d." % iter_index)
-
-            pA, N, D = random_instance(Nmax, Dmax)
-            
-            uA = solve_ndcp(pA, N, D)
-
-            # print(sum(max_pack(pA, N, D)), max_pack(pA, N, D))
-            # print(sum(max_crack(pA, N, D)), max_crack(pA, N, D))
-            # print(sum(max_pack_minus_one(pA, N, D)), max_pack_minus_one(pA, N, D))
-
-            q = ceil(uA)
-            is_integral_uA = abs(uA - int(uA) < 0.1)
-
-            threshold_fns = []
-            if is_integral_uA:
-                threshold_fns = [threshold_i_integral, threshold_ii_integral, threshold_iii_integral]
-            else:
-                threshold_fns = [threshold_I_half_integral, threshold_II_half_integral, threshold_III_half_integral]
-            
-            thresholds = [fn(N, D, q) for fn in threshold_fns]
-            is_counterexample = True
-            for index, fn in enumerate(threshold_fns):
-                if pA >= thresholds[index]:
-                    is_counterexample = False
-                    break
-            if is_counterexample:
-                print('***COUNTEREXAMPLE***')
-                print("Iteration %d" % iter_index)
-                print(pA, N, D)
-                print("Definer: %.1f" % uA)
-                print("Combiner: %.1f" % (N-uA))
-                print()
-                num_counterexamples += 1
-        print('Finished %d iterations. Found %d counterexamples.' % (num_iterations, num_counterexamples))

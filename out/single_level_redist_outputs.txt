@@ -1,0 +1,103 @@
+10 x 20 grid, voter distribution (0 is party b)
+
+vote-share 53%:
+
+Definer has 106 supporters. 
+
+00011111000111100000
+11111101001101000100
+10110100010101100001
+01111001001111000101
+11111101010110100100
+01100001001011100010
+00100111101100111011
+11000100100111111110
+00110101111001111111
+00000100001110100111
+
+District centered at unit 2 has total weight 2
+District centered at unit 1 has total weight 2
+District centered at unit 3 has total weight 2
+District centered at unit 4 has total weight 2
+District centered at unit 5 has total weight 2
+District centered at unit 45 has total weight 2
+District centered at unit 7 has total weight 2
+District centered at unit 8 has total weight -6
+District centered at unit 198 has total weight 2
+District centered at unit 199 has total weight 2
+Wins for a:      9
+Wins for b:      1
+Ties:            0
+
+
+vote-share 48%:
+
+Definer has 96 supporters.
+
+00011111000101000000
+11111101001101000100
+10110100010101100001
+01111001001111000100
+11111101010110000100
+01100001001011100010
+00100101101100111001
+01000100100111111110
+00000101111001111111
+00000100001110100110
+
+Explored 2211 nodes (2315632 simplex iterations) in 1862.00 seconds
+Thread count was 4 (of 4 available processors)
+
+District centered at unit 5 has total weight 2
+District centered at unit 1 has total weight 2
+District centered at unit 2 has total weight 2
+District centered at unit 3 has total weight 2
+District centered at unit 4 has total weight 2
+District centered at unit 6 has total weight 2
+District centered at unit 7 has total weight 2
+District centered at unit 8 has total weight 2
+District centered at unit 9 has total weight -20
+District centered at unit 36 has total weight -4
+Wins for a:      8
+Wins for b:      2
+Ties:            0
+
+District breakdown (vote-shares for a):
+8 * 11 = 88
+1 *  0 = 0
+1 *  8 = 8
+
+Total: 96
+
+
+
+vote-share 43%:
+Definer has 86 supporters.
+
+00011111000101000000
+11111101001001000100
+10110000010101000001
+01111000001111000100
+11101101000110000100
+01100001001011100000
+00100101101100111000
+01000100100111111110
+00000101011001111111
+00000100001100100110
+
+Explored 21414 nodes (14652388 simplex iterations) in 11524.38 seconds
+Thread count was 4 (of 4 available processors)
+
+District centered at unit 10 has total weight 2
+District centered at unit 1 has total weight 2
+District centered at unit 2 has total weight -18
+District centered at unit 3 has total weight 2
+District centered at unit 4 has total weight 2
+District centered at unit 5 has total weight 2
+District centered at unit 6 has total weight 2
+District centered at unit 7 has total weight 2
+District centered at unit 8 has total weight -16
+District centered at unit 9 has total weight -8
+Wins for a:      7
+Wins for b:      3
+Ties:            0

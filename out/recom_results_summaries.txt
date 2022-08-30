@@ -1,0 +1,6 @@
+10 parts, 1000 steps.
+
+The ReCom chain ran in 1164.3295 seconds total, for an average of 1.1643 seconds per step.
+
+The best possible definer utility is 6.0, achieved by map #12.
+
