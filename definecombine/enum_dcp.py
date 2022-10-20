@@ -40,7 +40,7 @@ def solve_dcp_grid(num_rows, num_cols, num_districts, voter_grid):
 
     with open(enumeration_filename, 'r') as enum_file:
         csv_enum_file = csv.reader(enum_file)
-        for line in tqdm(csv_enum_file, desc="Trying all subdistrict partitions..."):
+        for line in tqdm(csv_enum_file, desc="Trying all subdistrict partitions"):
             num_partitions += 1
             assignment_grid = np.array(line, dtype=int).reshape(num_rows, num_cols)
 
