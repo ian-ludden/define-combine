@@ -4,6 +4,8 @@ import numpy as np
 import sys
 from tqdm import tqdm
 
+DEBUG = False
+
 """
 Solve DCP on a grid graph by exhaustive search 
 over all possible definer strategies (subdistrict partitions) 
@@ -29,7 +31,7 @@ Returns:
 def solve_dcp_grid(num_rows, num_cols, num_districts, voter_grid):
     num_subdistricts = 2 * num_districts
     units_per_subdistrict = (num_rows * num_cols) // num_subdistricts
-    enumeration_filename = f"../enumerations/enum_[{num_cols},{num_rows}]_[{units_per_subdistrict}]_{num_subdistricts}_rc.txt"
+    enumeration_filename = f"enumerations\\enum_[{num_cols},{num_rows}]_[{units_per_subdistrict}]_{num_subdistricts}_rc.txt"
     
     # Keep track of best definer map so far
     best_assignment_grid = None
@@ -93,7 +95,7 @@ def solve_dcp_grid(num_rows, num_cols, num_districts, voter_grid):
                 best_combiner_matching = combiner_matching
                 best_subdistrict_votes = subdistrict_votes
 
-    print("Examined all", num_partitions, "available definer strategies.\n")
+    if DEBUG: print("Examined all", num_partitions, "available definer strategies.\n")
 
     return best_assignment_grid, best_definer_utility, best_combiner_matching, best_subdistrict_votes
     
@@ -118,10 +120,6 @@ if __name__ == '__main__':
     if first_player == "R": # Invert 1s and 0s in voter distribution
         voter_grid = 1 - voter_grid
 
-    print(first_player)
-    print(voter_grid)
-    print()
-
     best_definer_strategy, \
         best_definer_utility, \
         best_combiner_response, \
@@ -129,10 +127,14 @@ if __name__ == '__main__':
             solve_dcp_grid(num_rows=num_rows, num_cols=num_cols, \
             num_districts=num_districts, voter_grid=voter_grid)
     
-    print("Maximum definer utility:", best_definer_utility, "from the following subdistrict plan:\n")
-    print(best_definer_strategy)
-    print("with combiner response (perfect matching):\n")
-    for edge in best_combiner_response:
-        combiner_votes = subdistrict_votes[edge[0] - 1] + subdistrict_votes[edge[1] - 1]
-        definer_votes = (num_rows * num_cols) // num_districts - combiner_votes
-        print("{}\t{} ({}) votes for definer (combiner)".format(edge, int(definer_votes), int(combiner_votes)))
+    # Print CSV summary of instance with results
+    print(first_player, num_rows, num_cols, num_districts, voter_distr_fname, best_definer_utility, sep=',')
+
+    if DEBUG:
+        print("Maximum definer utility:", best_definer_utility, "from the following subdistrict plan:\n")
+        print(best_definer_strategy)
+        print("with combiner response (perfect matching):\n")
+        for edge in best_combiner_response:
+            combiner_votes = subdistrict_votes[edge[0] - 1] + subdistrict_votes[edge[1] - 1]
+            definer_votes = (num_rows * num_cols) // num_districts - combiner_votes
+            print("{}\t{} ({}) votes for definer (combiner)".format(edge, int(definer_votes), int(combiner_votes)))
