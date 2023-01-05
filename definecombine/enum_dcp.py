@@ -126,9 +126,16 @@ if __name__ == '__main__':
         subdistrict_votes = \
             solve_dcp_grid(num_rows=num_rows, num_cols=num_cols, \
             num_districts=num_districts, voter_grid=voter_grid)
+
+    definer_wins_for_max_utility = 0
+    for edge in best_combiner_response:
+        combiner_votes = subdistrict_votes[edge[0] - 1] + subdistrict_votes[edge[1] - 1]
+        definer_votes = (num_rows * num_cols) // num_districts - combiner_votes
+        definer_wins_for_max_utility += (definer_votes > combiner_votes)
+    
     
     # Print CSV summary of instance with results
-    print(first_player, num_rows, num_cols, num_districts, voter_distr_fname, best_definer_utility, sep=',')
+    print(first_player, num_rows, num_cols, num_districts, voter_distr_fname, best_definer_utility, definer_wins_for_max_utility, sep=',')
 
     if DEBUG:
         print("Maximum definer utility:", best_definer_utility, "from the following subdistrict plan:\n")
