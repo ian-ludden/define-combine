@@ -117,7 +117,7 @@ function test_example_two()
     
     # Using MibS Solver
     solution = BilevelJuMP.solve_with_MibS(model, MibS_jll.mibs)
-    println(solution)
+    # println(solution)
     @printf "Status: %s\n" solution.status
     @printf "Opt obj.: %.1f\n" solution.objective
     @printf "x value: %.1f\n" solution.all_upper["x"]
@@ -176,7 +176,7 @@ function test_example_three()
     
     # Using MibS Solver
     solution = BilevelJuMP.solve_with_MibS(model, MibS_jll.mibs)
-    println(solution)
+    # println(solution)
     @printf "Status: %s\n" solution.status
     @printf "Opt obj.: %.1f\n" solution.objective
     @printf "x value: %.1f\n" solution.all_upper["x"]
@@ -201,9 +201,9 @@ function test_example_three()
     @test solution.all_lower["y"] == 4.0
     return 0
 end
-    
-# test_example_one()
-# println("\n")
-# test_example_two()
-# println("\n")
+
+test_example_one()
+println("\n")
+test_example_two()
+println("\n")
 test_example_three()
