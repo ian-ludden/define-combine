@@ -163,8 +163,8 @@ function build_and_solve_grid_model(num_rows, num_cols, num_districts, voter_gri
     
     # Create model, x (definer assignment), and y (combiner assignment) variables
     m = BilevelModel()
-    # @variable(Upper(m), x[1:num_units, 1:num_units], Bin)
-    # @variable(Lower(m), y[1:num_units, 1:num_units], Bin)
+    @variable(Upper(m), x[1:num_units, 1:num_units], Bin)
+    @variable(Lower(m), y[1:num_units, 1:num_units], Bin)
 
     # Add objectives: definer's net utility, combiner's net utility. 
     # Need new variables, a_j for definer win and b_j for combiner win. 
@@ -180,22 +180,24 @@ function build_and_solve_grid_model(num_rows, num_cols, num_districts, voter_gri
     # TODO
 
     # Add sum(x_jj) <= 2 * num_districts (only 2N subdistrict centers)
-    # @constraint(Upper(m), sum(x[j, j] for j in 1:num_units) <= 2 * num_districts)
+    @constraint(Upper(m), sum(x[j, j] for j in 1:num_units) <= 2 * num_districts)
     
     # Add y_jj <= x_jj constraints (y centers must also be x centers)
-    # for j = 1:num_units
-    #     @constraint(Lower(m), y[j, j] <= x[j, j])
-    # end
+    for j = 1:num_units
+        @constraint(Lower(m), y[j, j] <= x[j, j])
+    end
 
     # Add constraints that y assignments follow x assignments: 
     # If x_ij = 1, then y_ik <= y_jk for all units i, j, k. 
-    # for k = 1:num_units
-    #     for i = 1:num_units
-    #         for j = 1:num_units
-    #             @constraint(Lower(m), y[i, k] <= y[j, k] + (1 - x[i, j]))
-    #         end
-    #     end
-    # end
+    for k = 1:num_units
+        for i = 1:num_units
+            for j = 1:num_units
+                if (i < j) && (i < k) && (j < k) # TODO: Use positions (result from L-fixing) rather than raw indices
+                    @constraint(Lower(m), y[i, k] <= y[j, k] + (1 - x[i, j]))
+                end
+            end
+        end
+    end
 
     # Get directed edge set
     dir_edge_list = get_directed_grid_edges(num_rows, num_cols)

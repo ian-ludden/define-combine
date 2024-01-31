@@ -1,0 +1,7 @@
+dcp_small_mibs.jl
+
+Variables: a, b, x, y
+Constraints: a xor b, limit on x sum, y <= x, and x_ij = 1 implies y_ik <= y_jk
+
+Ran for over an hour, decided to turn it off. 
+Over 4000 constraints now! And still not all of them! 
