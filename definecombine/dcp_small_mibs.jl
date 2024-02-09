@@ -7,6 +7,10 @@ using MibS_jll
 using Printf
 using Test
 
+ENV["TMPDIR"] = joinpath(pwd(), "temporary")
+mkdir(ENV["TMPDIR"])
+mktempdir()
+
 """
 Convert index of a grid cell to (row, col) pair. 
 Index starts at 0 in top-left corner and increases 
@@ -215,6 +219,12 @@ function build_and_solve_grid_model(num_rows, num_cols, num_districts, voter_gri
         @constraint(Lower(m), y[j, j] <= x[j, j])
     end
 
+    # Add assignment constraints: every unit assigned exactly once
+    for i = 1:num_units
+        @constraint(Upper(m), sum(x[i, j] for j in 1:num_units) == 1)
+        @constraint(Lower(m), sum(y[i, j] for j in 1:num_units) == 1)
+    end
+
     # Add population balance constraints
     popbal_tol = 1.0e-4
     x_ideal_district_pop = num_units ÷ (num_districts * 2)
@@ -321,13 +331,14 @@ solution = BilevelJuMP.solve_with_MibS(model, MibS_jll.mibs, verbose_results=tru
 @printf "Status: %s\n" solution.status
 @printf "Definer opt obj.: %.1f\n" solution.objective
 
-asst = Dict()
+asst = Dict() # y, or Combiner, assignment
 
 for i in 1:num_rows
     for j in 1:num_cols
         curr_index = rowcol_to_index(i - 1, j - 1, num_cols) + 1
         for center_index in 1:num_units
-            if value(model.x[curr_index, center_index]) ≈ 1
+            varname = string("y[", curr_index, ",", center_index, "]")
+            if solution.all_lower[varname] ≈ 1
                 asst[curr_index] = center_index
             end
         end
@@ -337,7 +348,7 @@ end
 for i in 1:num_rows
     for j in 1:num_cols
         curr_index = rowcol_to_index(i - 1, j - 1, num_cols) + 1
-        @printf "%3d" asst[curr_index]
+        @printf "%3i" asst[curr_index]
     end
     println()
 end
