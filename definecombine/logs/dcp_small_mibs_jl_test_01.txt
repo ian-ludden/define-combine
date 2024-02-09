@@ -3,6 +3,9 @@ dcp_small_mibs.jl
 Variables: a, b, x, y
 Constraints: Only a xor b, limit on x sum, and y <= x
 
+Total wall-clock time: 76.86 seconds (a little over 1 min.)
+
+
 
 row = 2, col = 3
 [0, 2]

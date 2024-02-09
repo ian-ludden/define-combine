@@ -17,6 +17,18 @@ function index_to_rowcol(index, num_cols)
 end
 
 """
+Convert index of a grid cell to (row, col) pair. 
+Index starts at 1 in top-left corner and increases 
+left-to-right, top-to-bottom. 
+Row and column also start at 1, 
+so the top-left corner is (1, 1). 
+"""
+function index_to_rowcol_onebased(index, num_cols)
+    rowcol_zerobased = index_to_rowcol(index - 1, num_cols)
+    return (rowcol_zerobased[1] + 1, rowcol_zerobased[2] + 1)
+end
+
+"""
 Convert (row, col) of a grid cell to index. 
 Index starts at 0 in top-left corner and increases 
 left-to-right, top-to-bottom. 
@@ -159,6 +171,8 @@ definer fractional vote-shares (between 0.0 and 1.0).
 """
 function build_and_solve_grid_model(num_rows, num_cols, num_districts, voter_grid)
     num_units = num_rows * num_cols 
+    num_units_per_district = num_units ÷ num_districts
+    big_M = num_units_per_district + 1
     epsilon = 1.0e-8 # Needs to be smaller than smallest possible fractional part of a district's net votes
     
     # Create model, x (definer assignment), and y (combiner assignment) variables
@@ -168,16 +182,30 @@ function build_and_solve_grid_model(num_rows, num_cols, num_districts, voter_gri
 
     # Add objectives: definer's net utility, combiner's net utility. 
     # Need new variables, a_j for definer win and b_j for combiner win. 
-    @variable(Lower(m), a[1:num_units], Bin)
-    @variable(Lower(m), b[1:num_units], Bin)
-    for i = 1:num_units
-        @constraint(Lower(m), a[i] + b[i] <= 1)
-    end
-    @objective(Upper(m), Max, sum(a) - sum(b))
-    @objective(Lower(m), Max, sum(b) - sum(a))
+    # @variable(Lower(m), a[1:num_units], Bin)
+    # @variable(Lower(m), b[1:num_units], Bin)
+    # for i = 1:num_units
+    #     @constraint(Lower(m), a[i] + b[i] <= 1)
+    # end
+    # @objective(Upper(m), Max, sum(a) - sum(b))
+    # @objective(Lower(m), Max, sum(b) - sum(a))
+    @objective(Upper(m), Min, sum(y[j, j] for j in 1:num_units))
+    @objective(Lower(m), Max, sum(y[j, j] for j in 1:num_units))
 
     # Add big-M constraints for defining a_j and b_j using voter_grid and y_ij
-    # TODO
+    # for j = 1:num_units
+    #     @constraint(Lower(m), sum((voter_grid[index_to_rowcol_onebased(i, num_cols)...] - 0.5) * y[i, j] for i in 1:num_units) 
+    #         <= big_M * a[j])
+    #     @constraint(Lower(m), sum((voter_grid[index_to_rowcol_onebased(i, num_cols)...] - 0.5) * y[i, j] for i in 1:num_units) 
+    #         >= epsilon - big_M * (1 - a[j]))
+    # end
+
+    # for j = 1:num_units
+    #     @constraint(Lower(m), sum((0.5 - voter_grid[index_to_rowcol_onebased(i, num_cols)...]) * y[i, j] for i in 1:num_units) 
+    #         <= big_M * b[j])
+    #     @constraint(Lower(m), sum((0.5 - voter_grid[index_to_rowcol_onebased(i, num_cols)...]) * y[i, j] for i in 1:num_units) 
+    #         >= epsilon - big_M * (1 - b[j]))
+    # end
 
     # Add sum(x_jj) <= 2 * num_districts (only 2N subdistrict centers)
     @constraint(Upper(m), sum(x[j, j] for j in 1:num_units) <= 2 * num_districts)
@@ -187,17 +215,48 @@ function build_and_solve_grid_model(num_rows, num_cols, num_districts, voter_gri
         @constraint(Lower(m), y[j, j] <= x[j, j])
     end
 
-    # Add constraints that y assignments follow x assignments: 
-    # If x_ij = 1, then y_ik <= y_jk for all units i, j, k. 
-    for k = 1:num_units
-        for i = 1:num_units
-            for j = 1:num_units
-                if (i < j) && (i < k) && (j < k) # TODO: Use positions (result from L-fixing) rather than raw indices
-                    @constraint(Lower(m), y[i, k] <= y[j, k] + (1 - x[i, j]))
-                end
-            end
+    # Add population balance constraints
+    popbal_tol = 1.0e-4
+    x_ideal_district_pop = num_units ÷ (num_districts * 2)
+    x_popbal_lb = x_ideal_district_pop * (1.0 - popbal_tol)
+    x_popbal_ub = x_ideal_district_pop * (1.0 + popbal_tol)
+    y_ideal_district_pop = num_units ÷ num_districts
+    y_popbal_lb = y_ideal_district_pop * (1.0 - popbal_tol)
+    y_popbal_ub = y_ideal_district_pop * (1.0 + popbal_tol)
+    
+    for j = 1:num_units
+        continue
+        # @constraint(Upper(m), sum(x[i, j] for i in 1:num_units) <= x_popbal_ub)
+        # @constraint(Upper(m), sum(x[i, j] for i in 1:num_units) >= x_popbal_lb)
+        # @constraint(Lower(m), sum(y[i, j] for i in 1:num_units) <= y_popbal_ub)
+        # @constraint(Lower(m), sum(y[i, j] for i in 1:num_units) >= y_popbal_lb)
+    end
+
+    # Add some symmetry-breaking constraints. 
+    # TODO: Add L-fixing/pos-based symmetry breaking. 
+    for i = 1:num_units
+        for j = i+1:num_units
+            @constraint(Upper(m), x[i, j] <= 0)
         end
     end
+    
+    for i = 1:num_units
+        for j = i+1:num_units
+            @constraint(Lower(m), y[i, j] <= 0)
+        end
+    end
+
+    # Add constraints that y assignments follow x assignments: 
+    # If x_ij = 1, then y_ik <= y_jk for all units i, j, k. 
+    # for k = 1:num_units
+    #     for i = 1:num_units
+    #         for j = 1:num_units
+    #             if (i < j) && (i < k) && (j < k) # TODO: Use positions (result from L-fixing) rather than raw indices
+    #                 @constraint(Lower(m), y[i, k] <= y[j, k] + (1 - x[i, j]))
+    #             end
+    #         end
+    #     end
+    # end
 
     # Get directed edge set
     dir_edge_list = get_directed_grid_edges(num_rows, num_cols)
@@ -211,7 +270,8 @@ function build_and_solve_grid_model(num_rows, num_cols, num_districts, voter_gri
     println()
 
     # Add Shirabe flow variables for contiguity
-    # @variable(Upper(m), f[1:num_units, 1:num_dir_edges] >= 0.0)
+    # TODO: It seems these have to be integral for MibS to be able to solve the bilevel MILP... 
+    @variable(Lower(m), f[1:num_units, 1:num_dir_edges] >= 0, Int)
 
     # Add cut edge variables with quadratic constraints to define them
     # TODO: May have to manually linearize these quadratic constraints if MibS is unhappy
@@ -239,6 +299,7 @@ end
 index = 11
 num_rows = 4
 num_cols = 4
+num_units = num_rows * num_cols
 num_districts = 4
 voter_grid = zeros(Float64, 4, 4)
 voter_grid[1:2, 1:4] .= 1.0
@@ -258,4 +319,25 @@ display(model)
 solution = BilevelJuMP.solve_with_MibS(model, MibS_jll.mibs, verbose_results=true)
 # println(solution)
 @printf "Status: %s\n" solution.status
-@printf "Opt obj.: %.1f\n" solution.objective
+@printf "Definer opt obj.: %.1f\n" solution.objective
+
+asst = Dict()
+
+for i in 1:num_rows
+    for j in 1:num_cols
+        curr_index = rowcol_to_index(i - 1, j - 1, num_cols) + 1
+        for center_index in 1:num_units
+            if value(model.x[curr_index, center_index]) ≈ 1
+                asst[curr_index] = center_index
+            end
+        end
+    end
+end
+
+for i in 1:num_rows
+    for j in 1:num_cols
+        curr_index = rowcol_to_index(i - 1, j - 1, num_cols) + 1
+        @printf "%3d" asst[curr_index]
+    end
+    println()
+end
