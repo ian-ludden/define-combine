@@ -1,0 +1,44 @@
+
+========================================================
+========================================================
+Welcome to MibS (Mixed Integer Bilevel Solver)
+Copyright (C) 2007-2019 Lehigh University, Scott DeNegre, Ted Ralphs
+and Sahar Tahernejad.
+All Rights Reserved.
+This software is licensed under the Eclipse Public License. Please see
+accompanying file for terms.
+Version: 1.1.3
+Build Date: Dec  5 2021
+========================================================
+========================================================
+==  Welcome to the Abstract Library for Parallel Search (ALPS) 
+==  Copyright 2000-2019 Lehigh University and others 
+==  All Rights Reserved. 
+==  Distributed under the Eclipse Public License 1.0 
+==  Version: 1.5
+==  Build Date: Dec  4 2021
+Alps0030I Data file: C:\Users\luddenig\AppData\Local\Temp\jl_loGXZA\model.mps
+Coin0001I At line 1 NAME
+Coin0001I At line 2 ROWS
+Coin0001I At line 293 COLUMNS
+Coin0001I At line 1879 RHS
+Coin0001I At line 2169 RANGES
+Coin0001I At line 2170 BOUNDS
+Coin0001I At line 4219 ENDATA
+Coin0002I Problem no_name has 289 rows, 1280 columns and 800 elements
+LL Data File: C:\Users\luddenig\AppData\Local\Temp\jl_loGXZA\model.aux
+Number of LL Variables:   1024
+
+=======================================
+Analyzing problem structure            
+=======================================
+
+Number of UL Variables: 256
+Number of LL Variables: 1024
+Number of UL Rows: 137
+Number of LL Rows: 152
+Number of integer UL Variables: 256
+Number of integer LL Variables: 1024
+This instance is a pure integer problem.
+All upper level variables are binary.
+MibS cannot currently handle equality constraints.
