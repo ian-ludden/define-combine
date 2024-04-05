@@ -5,14 +5,14 @@
 # ```math
 # \max_{{\bf x}} \sum_{i,j} x_{i,j},\\
 # \notag s.t.\\
-# x \in \{0, 1\}^{n \times ^n},\\
+# x \in \{0, 1\}^{n \times n},\\
 # ```
 # Second level
 # ```math
 # \max_{{\bf y}} \sum_{i,j} y_{i,j},\\
 # \notag s.t.\\
 # \sum_{j \in [n]} y_{j,j} == 1,\\
-# y \in \{0, 1\}^{n \times ^n}.\\
+# y \in \{0, 1\}^{n \times n}.\\
 # ```
 
 using BilevelJuMP
@@ -42,7 +42,7 @@ function build_model(num_units, center_index)
             @constraint(Lower(m), y[i, i] <= 0)
         end
     end
-    
+
     return m
 end
 
